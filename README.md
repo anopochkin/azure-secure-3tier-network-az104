@@ -78,17 +78,14 @@ graph LR;
 *   Permissions nécessaires pour créer des ressources dans la souscription.
 
 ### Fichiers du Template
-*   `main.arm.json` (ou `azuredeploy.json`): Template ARM principal.
-*   `parameters.arm.json` (ou `azuredeploy.parameters.json`): Fichier de paramètres (recommandé).
+*   `template.json`: Template ARM principal.
+*   `parameters.json`: Fichier de paramètres (recommandé).
     *(Adaptez les noms de fichiers à ceux que vous utilisez)*
 
 ### Étapes de Déploiement
- 1.  Clonez ce dépôt : `git clone [URL de votre dépôt]`
- 2.  Naviguez vers le dossier contenant les fichiers du template.
- 3.  **Copiez `parameters.example.json` vers un nouveau fichier nommé `parameters.json`.**
- 4.  **Modifiez le fichier `parameters.json`** pour ajuster les paramètres à votre environnement. **Il est essentiel de fournir une valeur sécurisée pour le paramètre `adminPassword`.** Vous pouvez également ajuster les noms des ressources, la localisation (si paramétrée), etc.
- 5.  (Optionnel) Créez un groupe de ressources Azure si vous n'en avez pas déjà un : `az group create --name [NomDeVotreGroupeDeRessources] --location [VotreRegion]`
- 6.  Déployez le template en utilisant Azure CLI :
+ 1.  Clonez ce dépôt : git clone https://github.com/anopochkin/azure-secure-3tier-network-az104.git
+ 2.  **Modifiez le fichier `parameters.json`** pour ajuster les paramètres à votre environnement. **Il est essentiel de fournir une valeur sécurisée pour le paramètre `adminPassword`.** Vous pouvez également ajuster les noms des ressources, la localisation (si paramétrée), etc.
+ 3.  Déployez le template en utilisant Azure CLI :
      ```bash
      az deployment group create \
        --resource-group [NomDeVotreGroupeDeRessources] \
@@ -103,52 +100,54 @@ graph LR;
        -TemplateParameterFile .\parameters.json 
 
     ```
-    *(Assurez-vous que `[NomDeVotreGroupeDeRessources]` est créé au préalable ou que le template le crée).*
-
-## ⚙️ Configuration Manuelle Post-Déploiement
-
-Certaines configurations peuvent nécessiter des étapes manuelles après le déploiement du template ARM :
-
-1.  **Enregistrements DNS dans la Private DNS Zone :**
-    *   Le template ARM crée la zone `[Nom de votre zone DNS, ex: internal.supersoft.local]` et la lie au VNet.
-    *   Les enregistrements A pour les serveurs (ex: `web01`, `app01`, `db01`) doivent être ajoutés manuellement via le portail Azure ou par script.
-        *   *(Insérez ici un скриншот ваших A-записей после их ручного добавления)*
-            `![Enregistrements DNS A manuels](images/dns-a-records-manual.png)`
-2.  **Association des ASG aux interfaces réseau des VMs :**
-    *   Si votre template ARM déploie des VMs (même temporaires), assurez-vous que les ASG appropriés (`asg-webservers`, `asg-appservers`, etc.) sont associés à leurs interfaces réseau. Cela peut être fait via le portail ou par un script post-déploiement.
-    *   *(Si vous avez une VM de test déployée par ARM, insérez un скриншот de l'association ASG à sa NIC)*
-        `![Association ASG à la NIC de la VM de test](images/vm-test-asg-association.png)`
-3.  *(Autres étapes manuelles, si nécessaire)*
 
 ## 🛡️ Logique de Sécurité (Règles NSG)
 
-Le template ARM configure un Groupe de Sécurité Réseau (`[Nom de votre NSG, ex: nsg-supersoft-main]`) avec les règles suivantes pour segmenter le trafic. Ce NSG est associé aux sous-réseaux `[ex: snet-web, snet-app, snet-db, snet-management]`.
+Le template ARM configure un Groupe de Sécurité Réseau `nsg-supersoft-main` avec les règles suivantes pour segmenter le trafic. Ce NSG est associé aux sous-réseaux `snet-web, snet-app, snet-db, snet-management`.
 
 *   **Accès Web (Entrant) :**
-    *   Ports `80 (HTTP)` et `443 (HTTPS)` autorisés depuis `Internet` vers l'ASG `[Nom ASG Web, ex: asg-webservers]`.
+    *   Ports `80 (HTTP)` et `443 (HTTPS)` autorisés depuis `Internet` vers l'ASG `asg-webservers`.
 *   **Communication Web vers Application (Interne) :**
-    *   Port `[Port applicatif, ex: 8080 TCP]` autorisé depuis l'ASG `[Nom ASG Web]` vers l'ASG `[Nom ASG App]`.
+    *   Port `Port 8080 TCP` autorisé depuis l'ASG `snet-web` vers l'ASG `snet-app`.
 *   **Communication Application vers Base de Données (Interne) :**
-    *   Port `[Port BD, ex: 1433 TCP]` autorisé depuis l'ASG `[Nom ASG App]` vers l'ASG `[Nom ASG DB]`.
+    *   Port `Port BD 1433 TCP` autorisé depuis l'ASG `snet-app` vers l'ASG `snet-db`.
 *   **Accès Administratif (Entrant) :**
-    *   Port `[Port RDP/SSH, ex: 22 ou 3389 TCP]` autorisé depuis une adresse IP source spécifique (paramétrable ou `[Votre IP Publique]/32`) vers le sous-réseau `[Nom sous-réseau Management]`.
+    *   Port `Port RDP/SSH 22 ou 3389 TCP` autorisé depuis une adresse IP source spécifique (paramétrable ou `[Votre IP Publique]/32`) vers le sous-réseau `snet-management`.
 *   **Refus du trafic intra-VNet par défaut :**
-    *   Une règle avec une priorité plus basse (`[ex: 4000]`) refuse tout autre trafic entre les sous-réseaux du `VirtualNetwork` pour appliquer le principe du moindre privilège.
+    *   Une règle avec une priorité plus basse (`4000`) refuse tout autre trafic entre les sous-réseaux du `VirtualNetwork` pour appliquer le principe du moindre privilège.
 
 *(Tableau des règles de sécurité NSG configurées par le template) :*
 ![Règles NSG du template](images/nsg-rules-template.png)
-*(Capture d'écran **essentielle** de vos règles NSG telles que définies dans le template ou après déploiement, nommez-la `nsg-rules-template.png` et téléversez-la dans `images`)*
+
 
 ## 🛠️ Vérification et Tests (Azure Network Watcher)
 
-Après le déploiement et la configuration manuelle, les tests suivants ont été effectués à l'aide d'Azure Network Watcher. * (Si votre template ne déploie pas de VM de test, vous devrez en créer une manuellement pour ces tests et le mentionner).*
+Après le déploiement et la configuration manuelle, les tests suivants ont été effectués à l'aide d'Azure Network Watcher.
 
 ### Vérification du flux IP (IP Flow Verify)
-*(Décrivez les tests et résultats comme dans le template précédent, en indiquant les IP et ASG)*
-    *   **Test 1 : Internet -> VM Web (HTTPS)**
-        *   Résultat Obtenu : `[Indiquez le résultat obtenu]`.
-        *   `![Test IP Flow Internet vers Web](images/test-ipflow-internet-web.png)`
-    *   *(...autres tests IP Flow Verify со скриншотами...)*
+
+Plusieurs tests de flux IP ont été effectués à l'aide d'Azure Network Watcher pour valider les règles NSG. Les détails complets de chaque test (paramètres, source, destination, ports, protocole et résultat) sont visibles dans les captures d'écran ci-dessous. La machine virtuelle temporaire `temp-vm-web` (associée à l'ASG `asg-webservers`) a servi de point de référence.
+
+*   **Test 1 : Accès Internet entrant vers la VM Web sur HTTPS (Port 443)**
+    *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Web HTTPS](images/test-ipflow-internet-web.png)`
+        *(N'oubliez pas de remplacer `test-ipflow-internet-web.png` par le nom réel de votre capture d'écran et de la téléverser dans le dossier `images`)*
+
+*   **Test 2 : Communication sortante de la VM Web vers le niveau Application (Port Applicatif `[ex: 8080]`)**
+    *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Application](images/test-ipflow-web-app.png)`
+        *(N'oubliez pas de remplacer `test-ipflow-web-app.png` par le nom réel de votre capture d'écran)*
+
+*   **Test 3 : Tentative de communication sortante de la VM Web vers le niveau Base de Données (Port BD `[ex: 1433]`)**
+    *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Base de Données](images/test-ipflow-web-db.png)`
+        *(N'oubliez pas de remplacer `test-ipflow-web-db.png` par le nom réel de votre capture d'écran)*
+
+*   **Test 4 : Tentative d'accès Internet entrant vers le niveau Application (Port Applicatif `[ex: 8080]`)**
+    *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Application](images/test-ipflow-internet-app.png)`
+        *(N'oubliez pas de remplacer le nom du fichier image)*
+
+*   **(Ajoutez ici d'autres tests que vous avez effectués, en suivant le même format : un titre descriptif pour le test et une ligne avec la référence à la capture d'écran correspondante.)**
+    *   **Exemple pour un test supplémentaire :**
+        *   **Test 5 : Tentative d'accès Internet entrant vers le niveau Base de Données (Port BD `[ex: 1433]`)**
+            *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers BD](images/test-ipflow-internet-db.png)`
 
 ### Dépannage de la connexion (Connection Troubleshoot - pour DNS)
 *(Опишите проблему с DNSResolution, как мы обсуждали)*
@@ -179,7 +178,6 @@ Compétences clés démontrées :
 *   Compréhension de la segmentation réseau et des flux de trafic dans une architecture à 3 niveaux.
 *   Configuration des Zones DNS Privées Azure.
 *   Utilisation d'Azure Network Watcher pour le diagnostic et la validation.
-*   *(Ajoutez d'autres compétences si pertinent, ex: paramétrage des templates ARM)*
 
 ---
 
