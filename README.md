@@ -99,8 +99,6 @@ graph LR;
        -TemplateFile .\template.json `
        -TemplateParameterFile .\parameters.json 
 
-    ```
-
 ## 🛡️ Logique de Sécurité (Règles NSG)
 
 Le template ARM configure un Groupe de Sécurité Réseau `nsg-supersoft-main` avec les règles suivantes pour segmenter le trafic. Ce NSG est associé aux sous-réseaux `snet-web, snet-app, snet-db, snet-management`.
@@ -130,41 +128,15 @@ Plusieurs tests de flux IP ont été effectués à l'aide d'Azure Network Watche
 
 *   **Test 1 : Accès Internet entrant vers la VM Web sur HTTPS (Port 443)**
     *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Web HTTPS](images/test-ipflow-internet-web.png)`
-        *(N'oubliez pas de remplacer `test-ipflow-internet-web.png` par le nom réel de votre capture d'écran et de la téléverser dans le dossier `images`)*
-
+        
 *   **Test 2 : Communication sortante de la VM Web vers le niveau Application (Port Applicatif `[ex: 8080]`)**
     *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Application](images/test-ipflow-web-app.png)`
-        *(N'oubliez pas de remplacer `test-ipflow-web-app.png` par le nom réel de votre capture d'écran)*
 
 *   **Test 3 : Tentative de communication sortante de la VM Web vers le niveau Base de Données (Port BD `[ex: 1433]`)**
     *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Base de Données](images/test-ipflow-web-db.png)`
-        *(N'oubliez pas de remplacer `test-ipflow-web-db.png` par le nom réel de votre capture d'écran)*
 
 *   **Test 4 : Tentative d'accès Internet entrant vers le niveau Application (Port Applicatif `[ex: 8080]`)**
     *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Application](images/test-ipflow-internet-app.png)`
-        *(N'oubliez pas de remplacer le nom du fichier image)*
-
-*   **(Ajoutez ici d'autres tests que vous avez effectués, en suivant le même format : un titre descriptif pour le test et une ligne avec la référence à la capture d'écran correspondante.)**
-    *   **Exemple pour un test supplémentaire :**
-        *   **Test 5 : Tentative d'accès Internet entrant vers le niveau Base de Données (Port BD `[ex: 1433]`)**
-            *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers BD](images/test-ipflow-internet-db.png)`
-
-### Dépannage de la connexion (Connection Troubleshoot - pour DNS)
-*(Опишите проблему с DNSResolution, как мы обсуждали)*
-    *   `![Erreur DNSResolution](images/dns-resolution-error.png)`
-
-### Tronçon suivant (Next Hop)
-*(Décrivez les tests et результаты как в предыдущем шаблоне)*
-    *   `![Test Next Hop Web vers App](images/test-nexthop-web-app.png)`
-    *   *(...другие тесты Next Hop...)*
-
-### Topologie (Topology)
-*(Если использовали)*
-`![Topologie du réseau après déploiement ARM](images/network-topology-arm.png)`
-
-### Règles de sécurité effectives (Effective Security Rules)
-*(Если использовали)*
-`![Règles de sécurité effectives pour VM de test](images/effective-security-rules-vm-test.png)`
 
 ---
 
@@ -182,12 +154,11 @@ Compétences clés démontrées :
 ---
 
 ## 🧹 Nettoyage des Ressources
-Pour supprimer toutes les ressources déployées par ce template, supprimez le groupe de ressources `[NomDeVotreGroupeDeRessources]`.
+Pour supprimer toutes les ressources déployées par ce template, supprimez le groupe de ressources.
 
 ---
 
 ## 👨‍💻 Auteur
 
-- **Nom :** `[Votre Nom]`
 - Projet personnel pour la préparation à l'examen AZ-104.
-- *(Optionnel) Profil LinkedIn : [Votre lien LinkedIn]*
+- * Profil LinkedIn : https://www.linkedin.com/in/anopochkin/*
