@@ -1,3 +1,4 @@
+
 # Projet : Infrastructure Réseau Azure Sécurisée à 3 Niveaux via ARM Template (AZ-104)
 
 Ce projet déploie une infrastructure réseau sécurisée et segmentée dans Microsoft Azure à l'aide d'un **template ARM** (Azure Resource Manager). L'infrastructure est conçue pour héberger une application web à 3 niveaux et couvre les concepts clés de l'examen AZ-104.
@@ -11,9 +12,63 @@ L'infrastructure déployée par le template ARM comprend les éléments suivants
 *   Une Zone DNS Privée Azure (Private DNS Zone) pour la résolution de noms interne (configuration manuelle des enregistrements A après déploiement).
 *   Une machine virtuelle temporaire pour les tests.
 
-**Schéma d'architecture global :**
-![Schéma d'architecture global](images/architecture-diagram.png)
-*(N'oubliez pas de créer ce schéma, de le sauvegarder sous `architecture-diagram.png` et de le téléverser dans le dossier `images`)*
+## Schéma d'architecture global :
+
+```mermaid
+graph LR;
+
+    %% --- Définition des Nœuds ---
+    subgraph "Externe"
+        Internet[("Internet")]
+        AdminIP[("Votre IP Admin<br/>[VOTRE_IP_ADMIN/32]")]
+    end
+
+    subgraph "Azure VNet: vnet-supersoft-prod"
+        direction TB
+
+        subgraph "snet-web"
+            VM_WEB[("fa:fa-desktop VM Web<br/>(ASG: asg-webservers)")]
+        end
+
+        subgraph "snet-app"
+            APP[("fa:fa-cogs Serveurs App<br/>(ASG: asg-appservers)")]
+        end
+
+        subgraph "snet-db"
+            DB[("fa:fa-database Serveurs BD<br/>(ASG: asg-dbservers)")]
+        end
+
+        subgraph "snet-management"
+            MGMT[("fa:fa-user-cog Gestion<br/>(ASG: asg-managementservers)")]
+        end
+
+        NSG[("fa:fa-shield-alt NSG<br/>nsg-supersoft-main")]
+        DNS[("fa:fa-network-wired Private DNS<br/>internal.supersoft.local<br/>(Lié au VNet)")];
+
+        %% Associations NSG (visuelles simplifiées)
+        NSG -.-> snet-web;
+        NSG -.-> snet-app;
+        NSG -.-> snet-db;
+        NSG -.-> snet-management;
+        %% Строка связи DNS -> VNet УДАЛЕНА
+
+    end
+
+    %% --- Définition des Flux Autorisés ---
+    Internet -- "Ports 80/443<br/>(via NSG)" --> VM_WEB;
+    VM_WEB -- "Port 8080<br/>(via NSG)" --> APP;
+    APP -- "Port 1433<br/>(via NSG)" --> DB;
+    AdminIP -- "Port 22/3389<br/>(via NSG)" --> MGMT;
+    MGMT -- "Accès Admin<br/>(via NSG)" --> VM_WEB;
+    MGMT -- "Accès Admin<br/>(via NSG)" --> APP;
+    MGMT -- "Accès Admin<br/>(via NSG)" --> DB;
+
+
+    %% --- Application des Styles ---
+    classDef azure stroke:#0078D4,stroke-width:2px,fill:#f0f8ff;
+    class Internet,AdminIP,VNet,NSG,DNS,VM_WEB,APP,DB,MGMT azure;
+```
+
 
 ## 🚀 Déploiement via ARM Template
 
