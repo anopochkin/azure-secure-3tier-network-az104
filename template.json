@@ -1,0 +1,788 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "applicationSecurityGroups_asg_appservers_name": {
+      "type": "String"
+    },
+    "applicationSecurityGroups_asg_dbservers_name": {
+      "type": "String"
+    },
+    "applicationSecurityGroups_asg_managementservers_name": {
+      "type": "String"
+    },
+    "applicationSecurityGroups_asg_webservers_name": {
+      "type": "String"
+    },
+    "networkInterfaces_temp_vm_web576_name": {
+      "type": "String"
+    },
+    "networkSecurityGroups_nsg_supersoft_main_name": {
+      "type": "String"
+    },
+    "privateDnsZones_internal_supersoft_local_name": {
+      "type": "String"
+    },
+    "virtualMachines_temp_vm_web_name": {
+      "type": "String"
+    },
+    "virtualNetworks_vnet_supersoft_prod_name": {
+      "type": "String"
+    },
+
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Nom d'utilisateur de l'administrateur pour la machine virtuelle."       }
+    },
+    "adminPassword": {
+      "type": "securestring", // Important d'utiliser securestring pour les mots de passe
+      "metadata": {
+        "description": "Mot de passe de l'administrateur pour la machine virtuelle. Doit respecter les exigences de complexité d'Azure."
+      }
+
+
+  },
+  "resources": [
+    {
+      "apiVersion": "2024-05-01",
+      "location": "eastus",
+      "name": "[parameters('applicationSecurityGroups_asg_appservers_name')]",
+      "properties": {},
+      "type": "Microsoft.Network/applicationSecurityGroups"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "location": "eastus",
+      "name": "[parameters('applicationSecurityGroups_asg_dbservers_name')]",
+      "properties": {},
+      "type": "Microsoft.Network/applicationSecurityGroups"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "location": "eastus",
+      "name": "[parameters('applicationSecurityGroups_asg_managementservers_name')]",
+      "properties": {},
+      "type": "Microsoft.Network/applicationSecurityGroups"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "location": "eastus",
+      "name": "[parameters('applicationSecurityGroups_asg_webservers_name')]",
+      "properties": {},
+      "type": "Microsoft.Network/applicationSecurityGroups"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "location": "global",
+      "name": "[parameters('privateDnsZones_internal_supersoft_local_name')]",
+      "properties": {},
+      "type": "Microsoft.Network/privateDnsZones"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_temp_vm_web576_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[parameters('virtualMachines_temp_vm_web_name')]",
+      "properties": {
+        "additionalCapabilities": {
+          "hibernationEnabled": false
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_temp_vm_web576_name'))]",
+              "properties": {
+                "deleteOption": "Detach"
+              }
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_temp_vm_web_name')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "ImageDefault"
+            },
+            "provisionVMAgent": true
+          },
+          "requireGuestProvisionSignal": true,
+          "secrets": []
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "offer": "ubuntu-24_04-lts",
+            "publisher": "canonical",
+            "sku": "server",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Delete",
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_temp_vm_web_name'), '_disk1_56d36b6545244190a4cfa188baf57cd8'))]"
+            },
+            "name": "[concat(parameters('virtualMachines_temp_vm_web_name'), '_disk1_56d36b6545244190a4cfa188baf57cd8')]",
+            "osType": "Linux"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_temp_vm_web_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachines_temp_vm_web_name'), '/AzureNetworkWatcherExtension')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "publisher": "Microsoft.Azure.NetworkWatcher",
+        "type": "NetworkWatcherAgentLinux",
+        "typeHandlerVersion": "1.4"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Deny_All_VNet_Traffic')]",
+      "properties": {
+        "access": "Deny",
+        "destinationAddressPrefix": "*",
+        "destinationAddressPrefixes": [],
+        "destinationPortRange": "*",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 4000,
+        "protocol": "*",
+        "sourceAddressPrefix": "VirtualNetwork",
+        "sourceAddressPrefixes": [],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_internal_supersoft_local_name'))]"
+      ],
+      "name": "[concat(parameters('privateDnsZones_internal_supersoft_local_name'), '/app01')]",
+      "properties": {
+        "aRecords": [
+          {
+            "ipv4Address": "10.50.2.4"
+          }
+        ],
+        "ttl": 3600
+      },
+      "type": "Microsoft.Network/privateDnsZones/A"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_internal_supersoft_local_name'))]"
+      ],
+      "name": "[concat(parameters('privateDnsZones_internal_supersoft_local_name'), '/db01')]",
+      "properties": {
+        "aRecords": [
+          {
+            "ipv4Address": "10.50.3.4"
+          }
+        ],
+        "ttl": 3600
+      },
+      "type": "Microsoft.Network/privateDnsZones/A"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_internal_supersoft_local_name'))]"
+      ],
+      "name": "[concat(parameters('privateDnsZones_internal_supersoft_local_name'), '/web01')]",
+      "properties": {
+        "aRecords": [
+          {
+            "ipv4Address": "10.50.1.7"
+          }
+        ],
+        "ttl": 3600
+      },
+      "type": "Microsoft.Network/privateDnsZones/A"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_internal_supersoft_local_name'))]"
+      ],
+      "name": "[concat(parameters('privateDnsZones_internal_supersoft_local_name'), '/@')]",
+      "properties": {
+        "soaRecord": {
+          "email": "azureprivatedns-host.microsoft.com",
+          "expireTime": 2419200,
+          "host": "azureprivatedns.net",
+          "minimumTtl": 10,
+          "refreshTime": 3600,
+          "retryTime": 300,
+          "serialNumber": 1
+        },
+        "ttl": 3600
+      },
+      "type": "Microsoft.Network/privateDnsZones/SOA"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[parameters('virtualNetworks_vnet_supersoft_prod_name')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.50.0.0/16"
+          ]
+        },
+        "enableDdosProtection": false,
+        "encryption": {
+          "enabled": false,
+          "enforcement": "AllowUnencrypted"
+        },
+        "privateEndpointVNetPolicies": "Disabled",
+        "subnets": [
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-web')]",
+            "name": "snet-web",
+            "properties": {
+              "addressPrefixes": [
+                "10.50.1.0/24"
+              ],
+              "delegations": [],
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-app')]",
+            "name": "snet-app",
+            "properties": {
+              "addressPrefixes": [
+                "10.50.2.0/24"
+              ],
+              "delegations": [],
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-db')]",
+            "name": "snet-db",
+            "properties": {
+              "addressPrefixes": [
+                "10.50.3.0/24"
+              ],
+              "delegations": [],
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-management')]",
+            "name": "snet-management",
+            "properties": {
+              "addressPrefixes": [
+                "10.50.100.0/24"
+              ],
+              "delegations": [],
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          }
+        ],
+        "virtualNetworkPeerings": []
+      },
+      "type": "Microsoft.Network/virtualNetworks"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-web')]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+      ],
+      "kind": "Regular",
+      "location": "eastus",
+      "name": "[parameters('networkInterfaces_temp_vm_web576_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_temp_vm_web576_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "applicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+                }
+              ],
+              "primary": true,
+              "privateIPAddress": "10.50.1.4",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_supersoft_prod_name'), 'snet-web')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_managementservers_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Allow_Admin_Access')]",
+      "properties": {
+        "access": "Allow",
+        "destinationAddressPrefixes": [],
+        "destinationApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_managementservers_name'))]"
+          }
+        ],
+        "destinationPortRange": "22",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 140,
+        "protocol": "TCP",
+        "sourceAddressPrefix": "65.94.235.10/32",
+        "sourceAddressPrefixes": [],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Allow_Internet_To_Web_HTTP')]",
+      "properties": {
+        "access": "Allow",
+        "destinationAddressPrefixes": [],
+        "destinationApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+          }
+        ],
+        "destinationPortRange": "80",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 100,
+        "protocol": "TCP",
+        "sourceAddressPrefix": "*",
+        "sourceAddressPrefixes": [],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Allow_Internet_To_Web_HTTPS')]",
+      "properties": {
+        "access": "Allow",
+        "destinationAddressPrefixes": [],
+        "destinationApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+          }
+        ],
+        "destinationPortRange": "443",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 110,
+        "protocol": "TCP",
+        "sourceAddressPrefix": "*",
+        "sourceAddressPrefixes": [],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZones_internal_supersoft_local_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]"
+      ],
+      "location": "global",
+      "name": "[concat(parameters('privateDnsZones_internal_supersoft_local_name'), '/link-to-vnet-supersoft-prod')]",
+      "properties": {
+        "registrationEnabled": true,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]"
+        }
+      },
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_supersoft_prod_name'), '/snet-app')]",
+      "properties": {
+        "addressPrefixes": [
+          "10.50.2.0/24"
+        ],
+        "delegations": [],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+        },
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_supersoft_prod_name'), '/snet-db')]",
+      "properties": {
+        "addressPrefixes": [
+          "10.50.3.0/24"
+        ],
+        "delegations": [],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+        },
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_supersoft_prod_name'), '/snet-management')]",
+      "properties": {
+        "addressPrefixes": [
+          "10.50.100.0/24"
+        ],
+        "delegations": [],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+        },
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_supersoft_prod_name'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_supersoft_prod_name'), '/snet-web')]",
+      "properties": {
+        "addressPrefixes": [
+          "10.50.1.0/24"
+        ],
+        "delegations": [],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]"
+        },
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_dbservers_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Allow_App_To_DB')]",
+      "properties": {
+        "access": "Allow",
+        "destinationAddressPrefixes": [],
+        "destinationApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_dbservers_name'))]"
+          }
+        ],
+        "destinationPortRange": "1433",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 130,
+        "protocol": "TCP",
+        "sourceAddressPrefixes": [],
+        "sourceApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]"
+          }
+        ],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_nsg_supersoft_main_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]"
+      ],
+      "name": "[concat(parameters('networkSecurityGroups_nsg_supersoft_main_name'), '/Allow_Web_To_App')]",
+      "properties": {
+        "access": "Allow",
+        "destinationAddressPrefixes": [],
+        "destinationApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]"
+          }
+        ],
+        "destinationPortRange": "8080",
+        "destinationPortRanges": [],
+        "direction": "Inbound",
+        "priority": 120,
+        "protocol": "TCP",
+        "sourceAddressPrefixes": [],
+        "sourceApplicationSecurityGroups": [
+          {
+            "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+          }
+        ],
+        "sourcePortRange": "*",
+        "sourcePortRanges": []
+      },
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+    },
+    {
+      "apiVersion": "2024-05-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_dbservers_name'))]",
+        "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_managementservers_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[parameters('networkSecurityGroups_nsg_supersoft_main_name')]",
+      "properties": {
+        "securityRules": [
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Allow_Internet_To_Web_HTTP')]",
+            "name": "Allow_Internet_To_Web_HTTP",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+                }
+              ],
+              "destinationPortRange": "80",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "*",
+              "sourceAddressPrefixes": [],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Allow_Internet_To_Web_HTTPS')]",
+            "name": "Allow_Internet_To_Web_HTTPS",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+                }
+              ],
+              "destinationPortRange": "443",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 110,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "*",
+              "sourceAddressPrefixes": [],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Allow_Web_To_App')]",
+            "name": "Allow_Web_To_App",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]"
+                }
+              ],
+              "destinationPortRange": "8080",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 120,
+              "protocol": "TCP",
+              "sourceAddressPrefixes": [],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_webservers_name'))]"
+                }
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Allow_App_To_DB')]",
+            "name": "Allow_App_To_DB",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_dbservers_name'))]"
+                }
+              ],
+              "destinationPortRange": "1433",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 130,
+              "protocol": "TCP",
+              "sourceAddressPrefixes": [],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_appservers_name'))]"
+                }
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Allow_Admin_Access')]",
+            "name": "Allow_Admin_Access",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "id": "[resourceId('Microsoft.Network/applicationSecurityGroups', parameters('applicationSecurityGroups_asg_managementservers_name'))]"
+                }
+              ],
+              "destinationPortRange": "22",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 140,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "65.94.235.10/32",
+              "sourceAddressPrefixes": [],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('networkSecurityGroups_nsg_supersoft_main_name'), 'Deny_All_VNet_Traffic')]",
+            "name": "Deny_All_VNet_Traffic",
+            "properties": {
+              "access": "Deny",
+              "destinationAddressPrefix": "*",
+              "destinationAddressPrefixes": [],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 4000,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            },
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules"
+          }
+        ]
+      },
+      "type": "Microsoft.Network/networkSecurityGroups"
+    }
+  ],
+  "variables": {}
+}

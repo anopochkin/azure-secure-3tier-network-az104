@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "applicationSecurityGroups_asg_appservers_name": {
+      "value": "asg-appserveurs-demo" // Nom par défaut souhaité
+    },
+    "applicationSecurityGroups_asg_dbservers_name": {
+      "value": "asg-bd-demo" // Nom par défaut souhaité
+    },
+    "applicationSecurityGroups_asg_managementservers_name": {
+      "value": "asg-gestion-demo" // Nom par défaut souhaité
+    },
+    "applicationSecurityGroups_asg_webservers_name": {
+      "value": "asg-webserveurs-demo" // Nom par défaut souhaité
+    },
+    "networkInterfaces_temp_vm_web576_name": {
+      "value": "nic-vmtemp-demo" // Nom par défaut souhaité
+    },
+    "networkSecurityGroups_nsg_supersoft_main_name": {
+      "value": "nsg-principal-demo" // Nom par défaut souhaité
+    },
+    "privateDnsZones_internal_supersoft_local_name": {
+      "value": "interne.demo.local" // Nom par défaut souhaité
+    },
+    "virtualMachines_temp_vm_web_name": {
+      "value": "vmtemp-demo" // Nom par défaut souhaité
+    },
+    "virtualNetworks_vnet_supersoft_prod_name": {
+      "value": "vnet-demo-prod" // Nom par défaut souhaité
+    },
+    "adminUsername": {
+      "value": "azureuser" // Nom d'utilisateur par défaut souhaité
+    },
+    "adminPassword": {
+      "value": "REMPLACER_PAR_VOTRE_MOT_DE_PASSE_SECURISE" // Placeholder pour le mot de passe
+    }
+    // Ajoutez ici d'autres paramètres si vous les avez créés (ex: pour la localisation ou l'IP admin)
+    // "location": {
+    //   "value": "eastus" // ou une autre région par défaut
+    // },
+    // "adminSourceAddressPrefix": {
+    //   "value": "VOTRE_ADRESSE_IP/32"
+    // }
+  }
+}
