@@ -9,7 +9,7 @@ L'infrastructure déployée par le template ARM comprend les éléments suivants
 *   Un réseau virtuel (VNet) segmenté en sous-réseaux pour les niveaux Web, Application, Base de données et Gestion.
 *   Une Groupe de Sécurité Réseau (NSG) avec des règles prédéfinies pour contrôler le flux de trafic.
 *   Des Groupes de Sécurité d'Application (ASG) pour faciliter la gestion des règles NSG.
-*   Une Zone DNS Privée Azure (Private DNS Zone) pour la résolution de noms interne (configuration manuelle des enregistrements A après déploiement).
+*   Une Zone DNS Privée Azure (Private DNS Zone) pour la résolution de noms interne.
 *   Une machine virtuelle temporaire pour les tests.
 
 ## Schéma d'architecture global :
@@ -161,4 +161,4 @@ Pour supprimer toutes les ressources déployées par ce template, supprimez le g
 ## 👨‍💻 Auteur
 
 - Projet personnel pour la préparation à l'examen AZ-104.
-- * Profil LinkedIn : https://www.linkedin.com/in/anopochkin/*
+- * Profil LinkedIn : https://www.linkedin.com/in/anopochkin/
