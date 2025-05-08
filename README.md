@@ -1,4 +1,3 @@
-
 # Projet : Infrastructure Réseau Azure Sécurisée à 3 Niveaux via ARM Template (AZ-104)
 
 Ce projet déploie une infrastructure réseau sécurisée et segmentée dans Microsoft Azure à l'aide d'un **template ARM** (Azure Resource Manager). L'infrastructure est conçue pour héberger une application web à 3 niveaux et couvre les concepts clés de l'examen AZ-104.
@@ -127,16 +126,16 @@ Après le déploiement et la configuration manuelle, les tests suivants ont ét�
 Plusieurs tests de flux IP ont été effectués à l'aide d'Azure Network Watcher pour valider les règles NSG. Les détails complets de chaque test (paramètres, source, destination, ports, protocole et résultat) sont visibles dans les captures d'écran ci-dessous. La machine virtuelle temporaire `temp-vm-web` (associée à l'ASG `asg-webservers`) a servi de point de référence.
 
 *   **Test 1 : Accès Internet entrant vers la VM Web sur HTTPS (Port 443)**
-    *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Web HTTPS](images/test-ipflow-internet-web.png)`
+    *   Voir les détails et le résultat : ![Résultat Test IP Flow Internet vers Web HTTPS](images/test-ipflow-internet-web.png)
         
 *   **Test 2 : Communication sortante de la VM Web vers le niveau Application (Port Applicatif `[ex: 8080]`)**
-    *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Application](images/test-ipflow-web-app.png)`
+    *   Voir les détails et le résultat : ![Résultat Test IP Flow Web vers Application](images/test-ipflow-web-app.png)
 
 *   **Test 3 : Tentative de communication sortante de la VM Web vers le niveau Base de Données (Port BD `[ex: 1433]`)**
-    *   Voir les détails et le résultat : `![Résultat Test IP Flow Web vers Base de Données](images/test-ipflow-web-db.png)`
+    *   Voir les détails et le résultat : ![Résultat Test IP Flow Web vers Base de Données](images/test-ipflow-web-db.png)
 
 *   **Test 4 : Tentative d'accès Internet entrant vers le niveau Application (Port Applicatif `[ex: 8080]`)**
-    *   Voir les détails et le résultat : `![Résultat Test IP Flow Internet vers Application](images/test-ipflow-internet-app.png)`
+    *   Voir les détails et le résultat : ![Résultat Test IP Flow Internet vers Application](images/test-ipflow-internet-app.png)
 
 ---
 
